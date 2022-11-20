@@ -17,6 +17,6 @@ void Method(const FunctionCallbackInfo<Value> &args) {
 
 void init(Local<Object> exports) { NODE_SET_METHOD(exports, "first", Method); }
 
-NODE_MODULE(addon, init)
+NODE_MODULE(NODE_GYP_MODULE_NAME, init) // NODE_GYP_MODULE_NAME addon
 
 } // namespace __first__
