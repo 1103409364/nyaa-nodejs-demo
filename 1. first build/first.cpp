@@ -12,6 +12,8 @@ using v8::Value;
 void Method(const FunctionCallbackInfo<Value> &args) {
   Isolate *isolate = args.GetIsolate();
   args.GetReturnValue().Set(
+      // ToLocalChecked 将 MaybeLocal<> 转为 Local<> 本地句柄，
+      // 如果 MaybeLocal<>是空指针句柄
       String::NewFromUtf8(isolate, "first build").ToLocalChecked());
 }
 
