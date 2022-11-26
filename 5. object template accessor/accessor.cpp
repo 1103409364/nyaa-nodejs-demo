@@ -25,6 +25,7 @@ int x = 0;
   Local<Context> ctx = isolate->GetCurrentContext();
 
 void Getter1(Local<String> property, const PropertyCallbackInfo<Value> &info) {
+  // 在访问器中将 x的值传给 info.GetReturnValue（），使其返回值设置为 x的值
   info.GetReturnValue().Set(x);
 }
 
@@ -73,6 +74,8 @@ public:
   TestExternal(Local<Object> obj) {
     value = 233;
     _handle.Reset(Isolate::GetCurrent(), obj);
+    // 将这个持久句柄降格为一个弱持久句柄，防止内存泄露
+    // 传入回调函数 WeakCallback，以保证这个句柄在挂掉的时候去调用它
     _handle.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
     // _handle.MarkIndependent(); // 已废弃
   }
@@ -84,7 +87,8 @@ public:
   int Get() { return value; }
 
   Persistent<Object> _handle;
-
+  // 静态方法，用作 SetWeak 参数。在 WeacCallback 被调用的时候
+  // 也就是这个句柄挂掉的时候，在该函数内部将ExternalTest的这个对象ex删除
   static void WeakCallback(const v8::WeakCallbackInfo<TestExternal> &data) {
     TestExternal *ex = data.GetParameter();
     ex->_handle.Reset();
@@ -97,6 +101,7 @@ private:
 
 void Getter3(Local<String> property, const PropertyCallbackInfo<Value> &info) {
   Local<Object> self = info.Holder();
+  // Object的SetInternal-Field。往Object中塞一些内置的内存数据，该数据只能通过调用Object的GetInternalField函数获得
   Local<External> wrap = Local<External>::Cast(self->GetInternalField(0));
   void *ptr = wrap->Value();
   TestExternal *ex = (TestExternal *)ptr;
@@ -148,6 +153,7 @@ void Init(Local<Object> exports, Local<Object> module) {
       ((MaybeLocal<Object>)tpl->NewInstance(v8::Context::New(isolate)))
           .ToLocalChecked();
   TestExternal *ex = new TestExternal(ret);
+  // 塞入了一个 ExternalTest类的内置内存指针
   ret->SetInternalField(0, External::New(isolate, ex));
 
   (void)module->Set(v8::Context::New(isolate),
