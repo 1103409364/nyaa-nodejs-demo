@@ -38,7 +38,7 @@ void GetSummary(const FunctionCallbackInfo<Value> &args) {
   snprintf(ret, 6, "%s，%s，%d 岁。", person->name,
            person->gender == MALE ? "男" : "女", person->age);
   MaybeLocal<String> summary = String::NewFromUtf8(isolate, ret);
-
+  // 拿到这个对象的内置对象并做一些计算，将结果返回给JavaScript代码
   args.GetReturnValue().Set(summary.ToLocalChecked());
 }
 
