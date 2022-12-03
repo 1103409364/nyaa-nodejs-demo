@@ -3,16 +3,13 @@
 
 namespace __internal_field_wrong__ {
 
-using v8::Array;
 using v8::External;
-using v8::Function;
 using v8::FunctionCallbackInfo;
 using v8::FunctionTemplate;
 using v8::HandleScope;
 using v8::Isolate;
 using v8::Local;
 using v8::MaybeLocal;
-using v8::Number;
 using v8::Object;
 using v8::ObjectTemplate;
 using v8::String;
@@ -63,13 +60,11 @@ void Init(Local<Object> exports, Local<Object> module) {
 
   // 假设 obj 肯定不为空
   obj->SetInternalField(0, External::New(isolate, person));
-  (void)obj->Set(
-      v8::Context::New(isolate),
-      (MaybeLocal<String>(String::NewFromUtf8(isolate, "getSummary")))
-          .ToLocalChecked(),
-      FunctionTemplate::New(isolate, GetSummary)
-          ->GetFunction(v8::Context::New(isolate))
-          .ToLocalChecked());
+  (void)obj->Set(v8::Context::New(isolate),
+                 String::NewFromUtf8(isolate, "getSummary").ToLocalChecked(),
+                 FunctionTemplate::New(isolate, GetSummary)
+                     ->GetFunction(v8::Context::New(isolate))
+                     .ToLocalChecked());
 
   (void)module->Set(v8::Context::New(isolate),
                     String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
