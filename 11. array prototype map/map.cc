@@ -31,6 +31,7 @@ void Map(const FunctionCallbackInfo<Value> &args) {
   Local<Array> ret = Array::New(isolate, array->Length());
 
   Local<Value> null = v8::Null(isolate);
+  // 声明数组 a 长度 3，初始化三个参数都是 Value 类型
   Local<Value> a[3] = {Local<Object>(), null, array};
   for (uint32_t i = 0; i < array->Length(); i++) {
     a[0] = array->Get(v8::Context::New(isolate), i).ToLocalChecked();
