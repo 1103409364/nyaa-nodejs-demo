@@ -3,6 +3,7 @@
 
 namespace __template__ {
 
+using v8::Context;
 using v8::Function;
 using v8::FunctionCallbackInfo;
 using v8::FunctionTemplate;
@@ -21,17 +22,18 @@ void Method(const FunctionCallbackInfo<Value> &args) {
 
 void init(Local<Object> exports) {
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
   Local<FunctionTemplate> t = FunctionTemplate::New(isolate, Method);
-  Local<Function> fn =
-      t->GetFunction(v8::Context::New(isolate)).ToLocalChecked();
+  Local<Function> fn = t->GetFunction(context).ToLocalChecked();
   Local<String> name =
       String::NewFromUtf8(isolate, "funcCreateByTemplate").ToLocalChecked();
   fn->SetName(name);
   // 警告 Ignoring return value of function declared with 'warn_unused_result'
   // attribute。转为 void
   // https://stackoverflow.com/questions/43238446/ignoring-return-value-of-function-declared-with-warn-unused-result-attribute
-  (void)exports->Set(v8::Context::New(isolate), name, fn);
+  (void)exports->Set(context, name, fn);
 }
 
 NODE_MODULE(_template, init)

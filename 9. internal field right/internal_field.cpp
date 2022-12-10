@@ -1,8 +1,10 @@
+#include "v8-context.h"
 #include <node.h>
 
 namespace __internal_field_right__ {
 
 using v8::Array;
+using v8::Context;
 using v8::External;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -38,6 +40,7 @@ void WeakCallback(const v8::WeakCallbackInfo<PersistentWrapper> &data) {
 
 void CreateObject(const FunctionCallbackInfo<Value> &args) {
   Isolate *isolate = args.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
 
   // 新建对象模板
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
@@ -46,12 +49,11 @@ void CreateObject(const FunctionCallbackInfo<Value> &args) {
   // 新建对象以及设置内置字段
   PersistentWrapper *wrapper = new PersistentWrapper();
   wrapper->value = args[0]
-                       ->ToNumber(v8::Context::New(isolate))
+                       ->ToNumber(context)
                        .ToLocalChecked()
-                       ->Int32Value(v8::Context::New(isolate))
+                       ->Int32Value(context)
                        .ToChecked();
-  Local<Object> obj =
-      templ->NewInstance(v8::Context::New(isolate)).ToLocalChecked();
+  Local<Object> obj = templ->NewInstance(context).ToLocalChecked();
   obj->SetInternalField(0, External::New(isolate, wrapper));
 
   // 基于 obj 新建持久句柄
@@ -68,12 +70,13 @@ void CreateObject(const FunctionCallbackInfo<Value> &args) {
 
 void Init(Local<Object> exports, Local<Object> module) {
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
   HandleScope scope(isolate);
 
-  (void)exports->Set(v8::Context::New(isolate),
+  (void)exports->Set(context,
                      String::NewFromUtf8(isolate, "create").ToLocalChecked(),
                      FunctionTemplate::New(isolate, CreateObject)
-                         ->GetFunction(v8::Context::New(isolate))
+                         ->GetFunction(context)
                          .ToLocalChecked());
 }
 

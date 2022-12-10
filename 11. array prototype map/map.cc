@@ -34,11 +34,11 @@ void Map(const FunctionCallbackInfo<Value> &args) {
   // 声明数组 a 长度 3，初始化三个参数都是 Value 类型
   Local<Value> a[3] = {Local<Object>(), null, array};
   for (uint32_t i = 0; i < array->Length(); i++) {
-    a[0] = array->Get(v8::Context::New(isolate), i).ToLocalChecked();
+    a[0] = array->Get(context, i).ToLocalChecked();
     a[1] = Int32::New(isolate, i);
 
     MaybeLocal<Value> v = func->Call(context, null, 3, a);
-    (void)ret->Set(v8::Context::New(isolate), i, v.ToLocalChecked());
+    (void)ret->Set(context, i, v.ToLocalChecked());
   }
 
   args.GetReturnValue().Set(ret);
@@ -47,11 +47,12 @@ void Map(const FunctionCallbackInfo<Value> &args) {
 void Init(Local<Object> exports, Local<Object> module) {
   Isolate *isolate = Isolate::GetCurrent();
   HandleScope scope(isolate);
+  Local<Context> context = isolate->GetCurrentContext();
 
-  (void)module->Set(v8::Context::New(isolate),
+  (void)module->Set(context,
                     String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
                     FunctionTemplate::New(isolate, Map)
-                        ->GetFunction(v8::Context::New(isolate))
+                        ->GetFunction(context)
                         .ToLocalChecked());
 }
 

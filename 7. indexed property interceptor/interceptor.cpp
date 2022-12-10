@@ -1,4 +1,5 @@
 #include "../deps/minihttp/minihttp.h"
+#include "v8-context.h"
 #include <node.h>
 
 #ifdef _WIN32
@@ -10,6 +11,7 @@
 namespace __interceptor__ {
 
 using v8::Array;
+using v8::Context;
 using v8::EscapableHandleScope;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -31,23 +33,22 @@ using v8::Value;
 
 Local<Array> GetList(Isolate *isolate) {
   EscapableHandleScope scope(isolate);
+  Local<Context> context = isolate->GetCurrentContext();
 
   // 访问 CNode.js API
   char *content = minihttp::Download("https://cnodejs.org/api/v1/topics");
-  MaybeLocal<Value> maybe =
-      v8::JSON::Parse(v8::Context::New(isolate),
-                      String::NewFromUtf8(isolate, content).ToLocalChecked());
+  MaybeLocal<Value> maybe = v8::JSON::Parse(
+      context, String::NewFromUtf8(isolate, content).ToLocalChecked());
   Local<Value> ret = maybe.ToLocalChecked();
   free(content);
 
   // 得到 `data` 数组
   Local<Array> data = Local<Array>::Cast(
-      ret->ToObject(v8::Context::New(isolate))
+      ret->ToObject(context)
           .ToLocalChecked()
-          ->Get(v8::Context::New(isolate),
-                String::NewFromUtf8(isolate, "data").ToLocalChecked())
+          ->Get(context, String::NewFromUtf8(isolate, "data").ToLocalChecked())
           .ToLocalChecked()
-          ->ToObject(v8::Context::New(isolate))
+          ->ToObject(context)
           .ToLocalChecked());
 
   printf("fetching %s for %s...ok\n", "https://cnodejs.org/api/v1/topics",
@@ -66,6 +67,8 @@ void __Sleep() {
 
 void Getter(uint32_t index, const PropertyCallbackInfo<Value> &info) {
   Isolate *isolate = info.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   Local<Array> data = GetList(isolate);
@@ -73,11 +76,11 @@ void Getter(uint32_t index, const PropertyCallbackInfo<Value> &info) {
 
   if (!data.IsEmpty() && index < data->Length()) {
     info.GetReturnValue().Set(
-        data->Get(v8::Context::New(isolate), Number::New(isolate, index))
+        data->Get(context, Number::New(isolate, index))
             .ToLocalChecked()
-            ->ToObject(v8::Context::New(isolate))
+            ->ToObject(context)
             .ToLocalChecked()
-            ->Get(v8::Context::New(isolate),
+            ->Get(context,
                   String::NewFromUtf8(isolate, "title").ToLocalChecked())
             .ToLocalChecked());
   }
@@ -99,14 +102,15 @@ void Query(uint32_t index, const PropertyCallbackInfo<Integer> &info) {
 
 void Enumerator(const PropertyCallbackInfo<Array> &info) {
   Isolate *isolate = info.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   Local<Array> data = GetList(isolate);
   __Sleep();
 
   for (unsigned int i = 0; i < data->Length(); i++) {
-    (void)data->Set(v8::Context::New(isolate), Number::New(isolate, i),
-                    Number::New(isolate, i));
+    (void)data->Set(context, Number::New(isolate, i), Number::New(isolate, i));
   }
 
   info.GetReturnValue().Set(data);
@@ -117,6 +121,8 @@ void Init(Local<Object> exports, Local<Object> module) {
   atexit(minihttp::StopNetwork);
 
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   Local<ObjectTemplate> tpl = ObjectTemplate::New(isolate);
@@ -125,10 +131,8 @@ void Init(Local<Object> exports, Local<Object> module) {
       PropertyHandlerFlags::kNone));
 
   (void)module->Set(
-      v8::Context::New(isolate),
-      String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
-      ((v8::MaybeLocal<Object>)tpl->NewInstance(v8::Context::New(isolate)))
-          .ToLocalChecked());
+      context, String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
+      ((v8::MaybeLocal<Object>)tpl->NewInstance(context)).ToLocalChecked());
 }
 
 NODE_MODULE(indexed_property_interceptor, Init)

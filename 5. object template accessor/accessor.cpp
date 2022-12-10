@@ -47,7 +47,7 @@ void Getter2(Local<String> property, const PropertyCallbackInfo<Value> &info) {
           ->ToObject(context)
           .ToLocalChecked()
           ->Get(
-              v8::Context::New(isolate),
+              context,
               String::NewFromUtf8(info.GetIsolate(), "inner").ToLocalChecked())
           .ToLocalChecked());
 #else
@@ -61,8 +61,8 @@ void Setter2(Local<String> property, Local<Value> value,
 #if NODE_MODULE_VERSION >= 67
   CURRENT_CONTEXT(context);
   (void)info.Data()->ToObject(context).ToLocalChecked()->Set(
-      v8::Context::New(isolate),
-      String::NewFromUtf8(info.GetIsolate(), "inner").ToLocalChecked(), value);
+      context, String::NewFromUtf8(info.GetIsolate(), "inner").ToLocalChecked(),
+      value);
 #else
   info.Data()->ToObject()->Set(String::NewFromUtf8(info.GetIsolate(), "inner"),
                                value);
@@ -129,6 +129,8 @@ void Setter3(Local<String> property, Local<Value> value,
 
 void Init(Local<Object> exports, Local<Object> module) {
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   // 全局变量
@@ -139,7 +141,7 @@ void Init(Local<Object> exports, Local<Object> module) {
 
   // 类全局变量
   Local<Object> inner = Object::New(isolate);
-  (void)inner->Set(v8::Context::New(isolate),
+  (void)inner->Set(context,
                    String::NewFromUtf8(isolate, "inner").ToLocalChecked(),
                    String::NewFromUtf8(isolate, "蛋花汤").ToLocalChecked());
   tpl->SetAccessor(String::NewFromUtf8(isolate, "var2").ToLocalChecked(),
@@ -150,15 +152,13 @@ void Init(Local<Object> exports, Local<Object> module) {
                    Getter3, Setter3);
 
   Local<Object> ret =
-      ((MaybeLocal<Object>)tpl->NewInstance(v8::Context::New(isolate)))
-          .ToLocalChecked();
+      ((MaybeLocal<Object>)tpl->NewInstance(context)).ToLocalChecked();
   TestExternal *ex = new TestExternal(ret);
   // 塞入了一个 ExternalTest类的内置内存指针
   ret->SetInternalField(0, External::New(isolate, ex));
 
-  (void)module->Set(v8::Context::New(isolate),
-                    String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
-                    ret);
+  (void)module->Set(
+      context, String::NewFromUtf8(isolate, "exports").ToLocalChecked(), ret);
 }
 
 NODE_MODULE(accessor, Init)

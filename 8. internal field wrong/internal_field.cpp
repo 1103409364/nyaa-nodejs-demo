@@ -3,6 +3,7 @@
 
 namespace __internal_field_wrong__ {
 
+using v8::Context;
 using v8::External;
 using v8::FunctionCallbackInfo;
 using v8::FunctionTemplate;
@@ -44,6 +45,7 @@ void GetSummary(const FunctionCallbackInfo<Value> &args) {
 
 void Init(Local<Object> exports, Local<Object> module) {
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
   HandleScope scope(isolate);
 
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
@@ -55,20 +57,19 @@ void Init(Local<Object> exports, Local<Object> module) {
   person->gender = Gender::FEMALE;
   person->age = 495;
 
-  MaybeLocal<Object> dummy_obj = templ->NewInstance(v8::Context::New(isolate));
+  MaybeLocal<Object> dummy_obj = templ->NewInstance(context);
   Local<Object> obj = dummy_obj.ToLocalChecked();
 
   // 假设 obj 肯定不为空
   obj->SetInternalField(0, External::New(isolate, person));
-  (void)obj->Set(v8::Context::New(isolate),
+  (void)obj->Set(context,
                  String::NewFromUtf8(isolate, "getSummary").ToLocalChecked(),
                  FunctionTemplate::New(isolate, GetSummary)
-                     ->GetFunction(v8::Context::New(isolate))
+                     ->GetFunction(context)
                      .ToLocalChecked());
 
-  (void)module->Set(v8::Context::New(isolate),
-                    String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
-                    obj);
+  (void)module->Set(
+      context, String::NewFromUtf8(isolate, "exports").ToLocalChecked(), obj);
 }
 
 NODE_MODULE(_template, Init)

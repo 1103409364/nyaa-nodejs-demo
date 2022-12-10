@@ -21,12 +21,12 @@ void RunCallback(const FunctionCallbackInfo<Value> &args) {
   const unsigned argc = 1;
   Local<Value> argv[argc] = {
       String::NewFromUtf8(isolate, "hello world").ToLocalChecked()};
-  (void)cb->Call(Context::New(isolate), isolate->GetCurrentContext()->Global(),
-                 argc, argv);
+  (void)cb->Call(context, isolate->GetCurrentContext()->Global(), argc, argv);
 }
 
 void init(Local<Object> exports, Local<Object> module) {
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
   HandleScope scope(isolate);
 
   NODE_SET_METHOD(exports, "runCallback", RunCallback);
@@ -34,20 +34,19 @@ void init(Local<Object> exports, Local<Object> module) {
   Local<Object> global = isolate->GetCurrentContext()->Global();
   Local<Object> console =
       global
-          ->Get(Context::New(isolate),
+          ->Get(context,
                 String::NewFromUtf8(isolate, "console").ToLocalChecked())
           .ToLocalChecked()
-          ->ToObject(Context::New(isolate))
+          ->ToObject(context)
           .ToLocalChecked();
   Local<Function> log = Local<Function>::Cast(
       console
-          ->Get(Context::New(isolate),
-                String::NewFromUtf8(isolate, "log").ToLocalChecked())
+          ->Get(context, String::NewFromUtf8(isolate, "log").ToLocalChecked())
           .ToLocalChecked());
   Local<Value> argv[3] = {
       module, String::NewFromUtf8(isolate, "---").ToLocalChecked(), exports};
 
-  (void)log->Call(Context::New(isolate), console, 3, argv);
+  (void)log->Call(context, console, 3, argv);
 }
 
 NODE_MODULE(addon, init)

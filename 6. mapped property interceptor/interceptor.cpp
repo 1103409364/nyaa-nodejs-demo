@@ -11,6 +11,7 @@
 namespace __interceptor__ {
 
 using v8::Array;
+using v8::Context;
 using v8::EscapableHandleScope;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -32,23 +33,22 @@ using v8::Value;
 
 Local<Array> GetList(Isolate *isolate) {
   EscapableHandleScope scope(isolate);
+  Local<Context> context = isolate->GetCurrentContext();
 
   // 访问 CNode.js API
   char *content = minihttp::Download("https://cnodejs.org/api/v1/topics");
-  MaybeLocal<Value> maybe =
-      v8::JSON::Parse(v8::Context::New(isolate),
-                      String::NewFromUtf8(isolate, content).ToLocalChecked());
+  MaybeLocal<Value> maybe = v8::JSON::Parse(
+      context, String::NewFromUtf8(isolate, content).ToLocalChecked());
   Local<Value> ret = maybe.ToLocalChecked();
   free(content);
 
   // 得到 `data` 数组
   Local<Array> data = Local<Array>::Cast(
-      ret->ToObject(v8::Context::New(isolate))
+      ret->ToObject(context)
           .ToLocalChecked()
-          ->Get(v8::Context::New(isolate),
-                String::NewFromUtf8(isolate, "data").ToLocalChecked())
+          ->Get(context, String::NewFromUtf8(isolate, "data").ToLocalChecked())
           .ToLocalChecked()
-          ->ToObject(v8::Context::New(isolate))
+          ->ToObject(context)
           .ToLocalChecked());
 
   printf("fetching %s for %s...ok\n", "https://cnodejs.org/api/v1/topics",
@@ -59,6 +59,7 @@ Local<Array> GetList(Isolate *isolate) {
 
 Local<Object> GetTopic(Isolate *isolate, const char *id, const char *usage) {
   EscapableHandleScope scope(isolate);
+  Local<Context> context = isolate->GetCurrentContext();
 
   int url_length = strlen("https://cnodejs.org/api/v1/topic/") + strlen(id);
   char url[url_length + 1];
@@ -74,16 +75,15 @@ Local<Object> GetTopic(Isolate *isolate, const char *id, const char *usage) {
     printf("failed\n");
     return Local<Object>();
   }
-  MaybeLocal<Value> maybe =
-      v8::JSON::Parse(v8::Context::New(isolate),
-                      String::NewFromUtf8(isolate, content).ToLocalChecked());
+  MaybeLocal<Value> maybe = v8::JSON::Parse(
+      context, String::NewFromUtf8(isolate, content).ToLocalChecked());
   Local<Value> ret = maybe.ToLocalChecked();
 
   free(content);
 
-  if (ret->ToObject(v8::Context::New(isolate))
+  if (ret->ToObject(context)
           .ToLocalChecked()
-          ->Get(v8::Context::New(isolate),
+          ->Get(context,
                 String::NewFromUtf8(isolate, "success").ToLocalChecked())
           .ToLocalChecked()
           ->ToBoolean(isolate)
@@ -94,12 +94,11 @@ Local<Object> GetTopic(Isolate *isolate, const char *id, const char *usage) {
 
   // 得到 `data` 数据
   Local<Object> data =
-      ret->ToObject(v8::Context::New(isolate))
+      ret->ToObject(context)
           .ToLocalChecked()
-          ->Get(v8::Context::New(isolate),
-                String::NewFromUtf8(isolate, "data").ToLocalChecked())
+          ->Get(context, String::NewFromUtf8(isolate, "data").ToLocalChecked())
           .ToLocalChecked()
-          ->ToObject(v8::Context::New(isolate))
+          ->ToObject(context)
           .ToLocalChecked();
 
   printf("ok\n");
@@ -116,6 +115,8 @@ void __Sleep() {
 
 void Getter(Local<Name> property, const PropertyCallbackInfo<Value> &info) {
   Isolate *isolate = info.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   String::Utf8Value key(isolate, property);
@@ -125,10 +126,10 @@ void Getter(Local<Name> property, const PropertyCallbackInfo<Value> &info) {
 
   if (!data.IsEmpty()) {
     info.GetReturnValue().Set(
-        data->Get(v8::Context::New(isolate),
+        data->Get(context,
                   String::NewFromUtf8(isolate, "title").ToLocalChecked())
             .ToLocalChecked()
-            ->ToString(v8::Context::New(isolate))
+            ->ToString(context)
             .ToLocalChecked());
   }
 }
@@ -151,25 +152,25 @@ void Query(Local<Name> property, const PropertyCallbackInfo<Integer> &info) {
 
 void Enumerator(const PropertyCallbackInfo<Array> &info) {
   Isolate *isolate = info.GetIsolate();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   Local<Array> data = GetList(isolate);
   __Sleep();
 
   for (unsigned int i = 0; i < data->Length(); i++) {
-    Local<Object> element =
-        data->Get(v8::Context::New(isolate), Number::New(isolate, i))
-            .ToLocalChecked()
-            ->ToObject(v8::Context::New(isolate))
-            .ToLocalChecked();
+    Local<Object> element = data->Get(context, Number::New(isolate, i))
+                                .ToLocalChecked()
+                                ->ToObject(context)
+                                .ToLocalChecked();
     Local<String> id =
         element
-            ->Get(v8::Context::New(isolate),
-                  String::NewFromUtf8(isolate, "id").ToLocalChecked())
+            ->Get(context, String::NewFromUtf8(isolate, "id").ToLocalChecked())
             .ToLocalChecked()
-            ->ToString(v8::Context::New(isolate))
+            ->ToString(context)
             .ToLocalChecked();
-    (void)data->Set(v8::Context::New(isolate), Number::New(isolate, i), id);
+    (void)data->Set(context, Number::New(isolate, i), id);
   }
 
   info.GetReturnValue().Set(data);
@@ -180,6 +181,8 @@ void Init(Local<Object> exports, Local<Object> module) {
   atexit(minihttp::StopNetwork);
 
   Isolate *isolate = Isolate::GetCurrent();
+  Local<Context> context = isolate->GetCurrentContext();
+
   HandleScope scope(isolate);
 
   Local<ObjectTemplate> tpl = ObjectTemplate::New(isolate);
@@ -188,10 +191,8 @@ void Init(Local<Object> exports, Local<Object> module) {
       PropertyHandlerFlags::kOnlyInterceptStrings));
 
   (void)module->Set(
-      v8::Context::New(isolate),
-      String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
-      ((v8::MaybeLocal<Object>)tpl->NewInstance(v8::Context::New(isolate)))
-          .ToLocalChecked());
+      context, String::NewFromUtf8(isolate, "exports").ToLocalChecked(),
+      ((v8::MaybeLocal<Object>)tpl->NewInstance(context)).ToLocalChecked());
 }
 
 NODE_MODULE(mapped_property_interceptor, Init)
