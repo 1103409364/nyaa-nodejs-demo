@@ -8,6 +8,7 @@
         "-std=c++17", //使用c++17标准编译
         // "-I${workspaceFolder}/include", // 自定义头
         "-I/Users/z/.nvm/versions/node/v19.0.0/include/node", // node 头文件
+        "-I/Users/z/Library/pnpm/global/5/.pnpm/nan@2.17.0/node_modules/nan", // node 头文件
         "-fcolor-diagnostics",
         "-fansi-escape-codes",
         "-g", //生成和调试有关的信息
