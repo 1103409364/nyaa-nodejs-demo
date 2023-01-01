@@ -7,9 +7,9 @@
  */
 #ifndef __EFSW_CORE_LISTENER_H__
 #define __EFSW_CORE_LISTENER_H__
-#include <string>
-#include <nan.h>
 #include "./deps/efsw/include/efsw/efsw.hpp"
+#include <nan.h>
+#include <string>
 
 namespace efsw_core {
 
@@ -21,20 +21,17 @@ namespace efsw_core {
 
 class EFSWCoreListener : public efsw::FileWatchListener {
 public:
-    EFSWCoreListener(Nan::Callback* listener);
-    ~EFSWCoreListener();
+  EFSWCoreListener(Nan::Callback *listener);
+  ~EFSWCoreListener();
 
-    void HandleFileAction(
-            efsw::WatchId,
-            const std::string& dir,
-            const std::string& filename,
-            efsw::Action action,
-            std::string old_filename);
+  void HandleFileAction(efsw::WatchId, const std::string &dir,
+                        const std::string &filename, efsw::Action action,
+                        std::string old_filename);
 
 private:
-    Nan::Callback* listener;
+  Nan::Callback *listener;
 };
 
-}
+} // namespace efsw_core
 
 #endif
