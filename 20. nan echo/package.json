@@ -13,6 +13,6 @@
   },
   "homepage": "https://github.com/XadillaX/nyaa-nodejs-demo#readme",
   "dependencies": {
-    "nan": "^2.6.2"
+    "nan": "^2.17.0"
   }
 }
